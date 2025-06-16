@@ -1,30 +1,34 @@
-import { NextResponse } from "next/server"
-import { accessGrants, organizations } from "@/lib/data"
+import { accessGrants, organizations } from "@/lib/data";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const userAddress = searchParams.get("userAddress")
-  const organizationId = searchParams.get("organizationId")
+  const { searchParams } = new URL(request.url);
+  const userAddressParam = searchParams.get("userAddress");
+  const organizationIdParam = searchParams.get("organizationId");
 
-  let filteredGrants = [...accessGrants]
+  // Normalize once to avoid repeated lower‑casing inside the filter loop
+  const userAddressLower = userAddressParam?.toLowerCase();
 
-  if (userAddress) {
-    filteredGrants = filteredGrants.filter((grant) => grant.userAddress.toLowerCase() === userAddress.toLowerCase())
-  }
+  // Build an O(1) lookup for organization details instead of O(n) searches per grant
+  const orgMap = new Map(
+    organizations.map((org) => [org.id, { id: org.id, name: org.name }])
+  );
 
-  if (organizationId) {
-    filteredGrants = filteredGrants.filter((grant) => grant.organizationId === organizationId)
-  }
-
-  // Enhance grants with organization details
-  const enhancedGrants = filteredGrants.map((grant) => {
-    const organization = organizations.find((org) => org.id === grant.organizationId)
-
-    return {
+  const enhancedGrants = accessGrants
+    .filter((grant) => {
+      if (userAddressLower && grant.userAddress.toLowerCase() !== userAddressLower) {
+        return false;
+      }
+      if (organizationIdParam && grant.organizationId !== organizationIdParam) {
+        return false;
+      }
+      return true;
+    })
+    .map((grant) => ({
       ...grant,
-      organization: organization ? { id: organization.id, name: organization.name } : null,
-    }
-  })
+      organization: orgMap.get(grant.organizationId) ?? null,
+    }));
 
-  return NextResponse.json(enhancedGrants)
+  return NextResponse.json(enhancedGrants);
 }
+
