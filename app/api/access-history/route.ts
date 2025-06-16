@@ -1,43 +1,60 @@
-import { NextResponse } from "next/server"
-import { accessHistory, accessRequests, accessGrants } from "@/lib/data"
+import { NextResponse } from "next/server";
+import {
+  accessHistory,
+  accessRequests,
+  accessGrants,
+} from "@/lib/data";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const userAddress = searchParams.get("userAddress")
-  const organizationId = searchParams.get("organizationId")
+  const { searchParams } = new URL(request.url);
+  const userAddressLower = searchParams.get("userAddress")?.toLowerCase() || null;
+  const organizationId = searchParams.get("organizationId") || null;
 
-  let filteredHistory = [...accessHistory]
+  // Build quick‑lookup sets only when the corresponding filter is supplied
+  const userRequestIds = userAddressLower
+    ? new Set(
+        accessRequests
+          .filter((r) => r.userAddress.toLowerCase() === userAddressLower)
+          .map((r) => r.id),
+      )
+    : null;
 
-  if (userAddress) {
-    // Get all requests and grants for the user
-    const userRequests = accessRequests.filter(
-      (request) => request.userAddress.toLowerCase() === userAddress.toLowerCase(),
-    )
-    const userGrants = accessGrants.filter((grant) => grant.userAddress.toLowerCase() === userAddress.toLowerCase())
+  const userGrantIds = userAddressLower
+    ? new Set(
+        accessGrants
+          .filter((g) => g.userAddress.toLowerCase() === userAddressLower)
+          .map((g) => g.id),
+      )
+    : null;
 
-    // Filter history entries for those requests and grants
-    filteredHistory = filteredHistory.filter(
-      (history) =>
-        (history.accessRequestId && userRequests.some((req) => req.id === history.accessRequestId)) ||
-        (history.accessGrantId && userGrants.some((grant) => grant.id === history.accessGrantId)),
-    )
-  }
+  const orgRequestIds = organizationId
+    ? new Set(
+        accessRequests
+          .filter((r) => r.organizationId === organizationId)
+          .map((r) => r.id),
+      )
+    : null;
 
-  if (organizationId) {
-    // Get all requests and grants for the organization
-    const orgRequests = accessRequests.filter((request) => request.organizationId === organizationId)
-    const orgGrants = accessGrants.filter((grant) => grant.organizationId === organizationId)
+  const orgGrantIds = organizationId
+    ? new Set(
+        accessGrants
+          .filter((g) => g.organizationId === organizationId)
+          .map((g) => g.id),
+      )
+    : null;
 
-    // Filter history entries for those requests and grants
-    filteredHistory = filteredHistory.filter(
-      (history) =>
-        (history.accessRequestId && orgRequests.some((req) => req.id === history.accessRequestId)) ||
-        (history.accessGrantId && orgGrants.some((grant) => grant.id === history.accessGrantId)),
-    )
-  }
+  const filteredHistory = accessHistory.filter((h) => {
+    if (userRequestIds && h.accessRequestId && !userRequestIds.has(h.accessRequestId)) return false;
+    if (userGrantIds && h.accessGrantId && !userGrantIds.has(h.accessGrantId)) return false;
+    if (orgRequestIds && h.accessRequestId && !orgRequestIds.has(h.accessRequestId)) return false;
+    if (orgGrantIds && h.accessGrantId && !orgGrantIds.has(h.accessGrantId)) return false;
+    return true;
+  });
 
   // Sort by timestamp (newest first)
-  filteredHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  filteredHistory.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
 
-  return NextResponse.json(filteredHistory)
+  return NextResponse.json(filteredHistory);
 }
