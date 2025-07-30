@@ -3,32 +3,19 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userAddressParam = searchParams.get("userAddress");
-  const organizationIdParam = searchParams.get("organizationId");
+  const userAddress = searchParams.get("userAddress")?.toLowerCase();
+  const organizationId = searchParams.get("organizationId");
 
-  // Normalize once to avoid repeated lower‑casing inside the filter loop
-  const userAddressLower = userAddressParam?.toLowerCase();
-
-  // Build an O(1) lookup for organization details instead of O(n) searches per grant
+  // Preprocess organizations into a Map for O(1) lookup
   const orgMap = new Map(
     organizations.map((org) => [org.id, { id: org.id, name: org.name }])
   );
 
-  const enhancedGrants = accessGrants
-    .filter((grant) => {
-      if (userAddressLower && grant.userAddress.toLowerCase() !== userAddressLower) {
-        return false;
-      }
-      if (organizationIdParam && grant.organizationId !== organizationIdParam) {
-        return false;
-      }
-      return true;
-    })
-    .map((grant) => ({
-      ...grant,
-      organization: orgMap.get(grant.organizationId) ?? null,
-    }));
+  // Filter accessGrants based on query parameters
+  const filteredGrants = accessGrants.filter(({ userAddress: ua, organizationId: oid }) => {
+    const matchesUser = !userAddress || ua.toLowerCase() === userAddress;
+    const matchesOrg = !organizationId || oid === organizationId;
+    return matchesUser && matchesOrg;
+  });
 
-  return NextResponse.json(enhancedGrants);
-}
-
+  // Attach organization m
