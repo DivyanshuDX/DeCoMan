@@ -18,4 +18,14 @@ export async function GET(request: Request) {
     return matchesUser && matchesOrg;
   });
 
-  // Attach organization m
+  // Attach organization metadata to each grant
+  const enrichedGrants = filteredGrants.map((grant) => ({
+    ...grant,
+    organization: orgMap.get(grant.organizationId) || null,
+  }));
+
+  return NextResponse.json({
+    count: enrichedGrants.length,
+    data: enrichedGrants,
+  });
+}
