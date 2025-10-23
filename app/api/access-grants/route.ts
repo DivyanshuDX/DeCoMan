@@ -1,31 +1,35 @@
 import { accessGrants, organizations } from "@/lib/data";
 import { NextResponse } from "next/server";
 
+// ♻️ Precompute map ONCE (module scoped — not per-request)
+const orgMap = new Map(
+  organizations.map((org) => [org.id, { id: org.id, name: org.name }])
+);
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userAddress = searchParams.get("userAddress")?.toLowerCase();
-  const organizationId = searchParams.get("organizationId");
+  const userAddressParam = searchParams.get("userAddress");
+  const organizationIdParam = searchParams.get("organizationId");
 
-  // Preprocess organizations into a Map for O(1) lookup
-  const orgMap = new Map(
-    organizations.map((org) => [org.id, { id: org.id, name: org.name }])
-  );
+  // Lowercase only once for comparison
+  const normalizedUser = userAddressParam?.toLowerCase();
 
-  // Filter accessGrants based on query parameters
-  const filteredGrants = accessGrants.filter(({ userAddress: ua, organizationId: oid }) => {
-    const matchesUser = !userAddress || ua.toLowerCase() === userAddress;
-    const matchesOrg = !organizationId || oid === organizationId;
-    return matchesUser && matchesOrg;
-  });
-
-  // Attach organization metadata to each grant
-  const enrichedGrants = filteredGrants.map((grant) => ({
-    ...grant,
-    organization: orgMap.get(grant.organizationId) || null,
-  }));
+  // Single pass: filter + enrich
+  const result = [];
+  for (const grant of accessGrants) {
+    if (
+      (normalizedUser ? grant.userAddress.toLowerCase() === normalizedUser : true) &&
+      (organizationIdParam ? grant.organizationId === organizationIdParam : true)
+    ) {
+      result.push({
+        ...grant,
+        organization: orgMap.get(grant.organizationId) ?? null,
+      });
+    }
+  }
 
   return NextResponse.json({
-    count: enrichedGrants.length,
-    data: enrichedGrants,
+    count: result.length,
+    data: result,
   });
 }
