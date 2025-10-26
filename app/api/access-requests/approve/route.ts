@@ -3,7 +3,13 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: Request) {
   try {
-    const { requestId, userAddress, grantedFields } = await request.json();
+    const body: {
+      requestId?: string;
+      userAddress?: string;
+      grantedFields?: any;
+    } = await request.json();
+
+    const { requestId, userAddress } = body;
 
     if (!requestId || !userAddress) {
       return NextResponse.json(
@@ -16,13 +22,12 @@ export async function POST(request: Request) {
     const grantId = uuidv4();
     const transactionHash = `0x${uuidv4().replace(/-/g, "")}`;
 
-    return NextResponse.json({
-      success: true,
-      grantId,
-      transactionHash,
-    });
-  } catch (err) {
-    console.error("Failed to approve request:", err);
+    return NextResponse.json({ success: true, grantId, transactionHash });
+  } catch (error) {
+    console.error("Failed to approve request:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
+    );
+  }
+}
