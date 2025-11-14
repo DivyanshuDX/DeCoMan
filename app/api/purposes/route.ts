@@ -1,6 +1,17 @@
-import { NextResponse } from "next/server"
-import { purposes } from "@/lib/data"
+import { NextResponse } from "next/server";
+import { purposes } from "@/lib/data";
 
 export async function GET() {
-  return NextResponse.json(purposes)
+  try {
+    const response = Array.isArray(purposes) ? purposes : [];
+
+    return NextResponse.json(response, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching purposes:", error);
+
+    return NextResponse.json(
+      { error: "Failed to load purposes" },
+      { status: 500 }
+    );
+  }
 }
