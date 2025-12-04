@@ -110,7 +110,7 @@ Provides scalable transaction batching on Algorand — reducing cost & improving
 ## 👤 Maintainer
 **Divyanshu Kumar**  
 Full-stack & Blockchain Developer  
-📧 divyanshukc2003@gmail.com
+📧 dxarmy22091999@gmail.com
 
 ---
 
