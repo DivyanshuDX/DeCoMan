@@ -1,31 +1,44 @@
 import { NextResponse } from "next/server";
 import { grantConsent } from "@/lib/blockchain";
 
+interface ConsentRequestBody {
+  userAddress: string;
+  organizationId: string;
+  purposeId: string;
+  expiryDate: string;
+}
+
 export async function POST(request: Request) {
   try {
-    const body: {
-      userAddress?: string;
-      organizationId?: string;
-      purposeId?: string;
-      expiryDate?: string;
-    } = await request.json();
-
+    const body: Partial<ConsentRequestBody> = await request.json();
     const { userAddress, organizationId, purposeId, expiryDate } = body;
 
-    // Validate required fields
-    if (!userAddress || !organizationId || !purposeId || !expiryDate) {
+    // Validate request
+    const missingFields = ["userAddress", "organizationId", "purposeId", "expiryDate"].filter(
+      (field) => !body?.[field as keyof ConsentRequestBody]
+    );
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "Missing required fields: userAddress, organizationId, purposeId, expiryDate" },
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Optional expiry validation
+    if (new Date(expiryDate).toString() === "Invalid Date") {
+      return NextResponse.json(
+        { error: "Invalid expiryDate format. Expected ISO string." },
         { status: 400 }
       );
     }
 
     // Simulated blockchain transaction
     const { transactionHash, consentId } = await grantConsent(
-      userAddress,
-      organizationId,
-      purposeId,
-      expiryDate
+      userAddress!,
+      organizationId!,
+      purposeId!,
+      expiryDate!
     );
 
     const newConsent = {
@@ -33,22 +46,4 @@ export async function POST(request: Request) {
       userAddress,
       organizationId,
       purposeId,
-      status: "active",
-      createdAt: new Date().toISOString(),
-      expiryDate,
-      transactionHash,
-    };
-
-    return NextResponse.json({
-      success: true,
-      consent: newConsent,
-      transactionHash,
-    });
-  } catch (error) {
-    console.error("Error granting consent:", error);
-    return NextResponse.json(
-      { error: "Failed to grant consent" },
-      { status: 500 }
-    );
-  }
-}
+      status: "a
