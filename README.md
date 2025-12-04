@@ -89,3 +89,35 @@ Provides scalable transaction batching on Algorand — reducing cost & improving
 ---
 
 ## 🧪 System Flow
+
+---
+
+## 🌐 Live Project Link
+🔗 https://civitaas.vercel.app/
+
+---
+
+## 🛣 Future Roadmap
+- Real Aadhaar / DigiLocker integration
+- Zero Knowledge Proof-based score validation
+- DAO governance for scheme approval
+- AI-based dynamic scoring
+- Multi-language accessibility
+- Mobile App
+
+---
+
+## 👤 Maintainer
+**Divyanshu Kumar**  
+Full-stack & Blockchain Developer  
+📧 divyanshukc2003@gmail.com
+
+---
+
+## ⭐ Support
+If this project inspires you, please ⭐ **Star this repository**.
+
+> **Empowering social inclusion with decentralized trust and transparency — on Algorand**
+
+---
+
